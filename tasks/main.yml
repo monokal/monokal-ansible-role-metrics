@@ -1,0 +1,53 @@
+---
+
+# UFW
+
+- name: ufw_allow
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    direction: "{{ item.direction }}"
+  with_items:
+    - { port: '443', proto: 'tcp', direction: 'in'}
+
+# APT keys
+
+- name: add_newrelic_apt_key
+  apt_key:
+    url:   "https://download.newrelic.com/548C16BF.gpg"
+    state: present
+  register: add_newrelic_apt_key
+
+# APT repos
+
+- name: add_newrelic_apt_repo
+  when: add_newrelic_apt_key|success
+  apt_repository:
+    repo:         "deb http://apt.newrelic.com/debian/ newrelic non-free"
+    state:        present
+    update_cache: yes
+  register: add_newrelic_apt_repo
+
+# Packages
+
+- name: install_packages
+  when: add_newrelic_apt_repo|success
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - "newrelic-sysmond"
+  register: install_packages
+
+# NewRelic configuration
+
+- name: amend_newrelic_config
+  when: install_packages|success
+  template:
+    src:   nrsysmond.cfg.j2
+    dest:  /etc/newrelic/nrsysmond.cfg
+    owner: newrelic
+    group: newrelic
+    mode:  "u=rw,g=r,o="
+  notify:
+    - restart_newrelic
