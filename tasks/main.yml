@@ -9,7 +9,7 @@
     proto: "{{ item.proto }}"
     direction: "{{ item.direction }}"
   with_items:
-    - { port: '443', proto: 'tcp', direction: 'in'}
+    - { port: '443', proto: 'tcp', direction: 'out'}
 
 # APT keys
 
